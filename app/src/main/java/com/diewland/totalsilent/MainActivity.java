@@ -96,9 +96,9 @@ public class MainActivity extends AppCompatActivity {
             keepCurrentValues();
             vib.vibrate(400);
         }
-        audio.setStreamVolume(AudioManager.STREAM_RING, cur_ring, 0);
-        audio.setStreamVolume(AudioManager.STREAM_MUSIC, cur_music, 0);
-        audio.setStreamVolume(AudioManager.STREAM_NOTIFICATION, cur_notif, 0);
+        audio.setStreamVolume(AudioManager.STREAM_RING, cur_ring, AudioManager.FLAG_SHOW_UI);
+        audio.setStreamVolume(AudioManager.STREAM_MUSIC, cur_music, AudioManager.FLAG_SHOW_UI);
+        audio.setStreamVolume(AudioManager.STREAM_NOTIFICATION, cur_notif, AudioManager.FLAG_SHOW_UI);
     }
 
     private void updateInfo(){

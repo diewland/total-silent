@@ -82,7 +82,8 @@ public class MainActivity extends AppCompatActivity {
         //
         SharedPreferences.Editor editor = sharedPref.edit();
         for(Map.Entry<String, Integer> entry : sound_types.entrySet()) {
-            editor.putInt(entry.getKey(), entry.getValue());
+            Integer v = audio.getStreamVolume(entry.getValue());
+            editor.putInt(entry.getKey(), v);
         }
         editor.commit();
     }

@@ -15,7 +15,10 @@ import java.util.Map;
 
 public class MainActivity extends AppCompatActivity {
 
+    private String STATE_SILENT = "STATE_SILENT";
+
     private SharedPreferences sharedPref;
+    private SharedPreferences.Editor editor;
     private Switch toggle;
     private TextView out;
     private HashMap<String, Integer> sound_types;
@@ -30,6 +33,7 @@ public class MainActivity extends AppCompatActivity {
 
         // initialize starter values
         sharedPref = getPreferences(Context.MODE_PRIVATE);
+        editor = sharedPref.edit();
         toggle = (Switch)findViewById(R.id.switch1);
         out = (TextView)findViewById(R.id.out);
         audio = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
@@ -44,26 +48,71 @@ public class MainActivity extends AppCompatActivity {
         sound_types.put("SYSTEM", AudioManager.STREAM_SYSTEM);
         sound_types.put("VOICE_CALL", AudioManager.STREAM_VOICE_CALL);
 
+        // sync current sound info
+        sync();
+
         // bind switch button
-        // TODO keep toggle stage when click, onResume
         toggle.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton compoundButton, boolean isChecked) {
-                if(isChecked){
-                    turnOffSound();
-                    updateInfo();
-                }
-                else {
-                    turnOnSound();
-                    updateInfo();
-                }
+                toggleSound(isChecked);
+                setSilentState(isChecked);
+                updateInfo();
             }
         });
-
-        // update current values
-        updateInfo();
-        keepCurrentValues();
     }
+
+    // ##### SYNC FUNCTION #####
+
+    private void sync(){
+        if(!getSilentState()){
+            // if not silent, update latest sound info
+            for(Map.Entry<String, Integer> entry : sound_types.entrySet()) {
+                Integer v = audio.getStreamVolume(entry.getValue());
+                editor.putInt(entry.getKey(), v);
+            }
+            editor.commit();
+        }
+        else {
+            // if silent, update switch state
+            toggleLabel(true);
+            toggle.setChecked(true);
+        }
+        // display info
+        updateInfo();
+    }
+
+    // ##### STATE FUNCTION #####
+
+    private boolean getSilentState(){
+        return sharedPref.getBoolean(STATE_SILENT, false);
+    }
+    private void setSilentState(boolean newState){
+        editor.putBoolean(STATE_SILENT, newState);
+        editor.commit();
+    }
+
+    // ##### TOGGLE FUNCTION #####
+
+    private void toggleLabel(boolean silentFlag){
+        String label = silentFlag ? "Sound OFF" : "Sound ON";
+        toggle.setText(label);
+    }
+
+    private void toggleSound(boolean silentFlag){
+        toggleLabel(silentFlag);
+        for(Map.Entry<String, Integer> entry : sound_types.entrySet()){
+            if(silentFlag){
+                audio.setStreamVolume(entry.getValue(), 0, 0);
+            }
+            else {
+                int v = sharedPref.getInt(entry.getKey(),0);
+                audio.setStreamVolume(entry.getValue(), v, 0);
+            }
+        }
+    }
+
+    // ##### DISPLAY FUNCTION #####
 
     private void updateInfo(){
         out.setText("");
@@ -76,29 +125,11 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void keepCurrentValues(){
-        //
-        // TODO check silent ?
-        //
-        SharedPreferences.Editor editor = sharedPref.edit();
-        for(Map.Entry<String, Integer> entry : sound_types.entrySet()) {
-            Integer v = audio.getStreamVolume(entry.getValue());
-            editor.putInt(entry.getKey(), v);
-        }
-        editor.commit();
-    }
+    // ##### HANDLE EVENT #####
 
-    private void turnOnSound(){
-         for(Map.Entry<String, Integer> entry : sound_types.entrySet()) {
-            int cur_v = sharedPref.getInt(entry.getKey(),5);
-            audio.setStreamVolume(entry.getValue(), cur_v, 0);
-        }
+    @Override
+    protected void onResume() {
+        super.onResume();
+        sync();
     }
-
-    private void turnOffSound(){
-         for(Map.Entry<String, Integer> entry : sound_types.entrySet()) {
-            audio.setStreamVolume(entry.getValue(), 0, 0);
-        }
-    }
-
 }
